@@ -1,0 +1,21 @@
+version: '3'
+services:
+  api:
+    build: .
+    ports:
+      - '4898:4898'
+    volumes:
+      - .:/app
+    env_file:
+      - '.env'
+  worker:
+    build: .
+    command: python worker.py
+    volumes:
+      - .:/app
+    env_file:
+      - '.env'
+  mongo:
+    image: mongo
+    ports:
+      - '27017:27017'

@@ -1,0 +1,79 @@
+{% set parameters = job.job_parameters %}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: '{{ job.name }}'
+spec:
+  template:
+    spec:
+      {% if job.has_input_file %}
+      initContainers:
+      - name: initializer
+        image: ivoscc/docker-gcsfuse-utils
+        command: [ "/bin/sh", "-c" ]
+        args: [ "gcsfuse --key-file /apikey/gcs-api-key.json {{ bucket_name }} /mnt/ && unzip /mnt/{{ job.name }}-input.zip -d /input/" ]
+        volumeMounts:
+          - name: gcs-api-key-volume
+            mountPath: "/apikey/"
+            readOnly: true
+          - name: task-pv-storage-input
+            mountPath: "/input/"
+        securityContext:
+          privileged: true
+          capabilities:
+            add:
+              - SYS_ADMIN
+      {% endif %}
+      containers:
+      - name: task
+        image: {{ parameters.docker_image }}
+        volumeMounts:
+          {% if job.has_input_file %}
+          - name: task-pv-storage-input
+            mountPath: "/input/"
+            readOnly: true
+          {% endif %}
+          - name: task-pv-storage-output
+            mountPath: "/output/"
+        {% if parameters.environment_variables %}
+        env:
+        {% for var_name, value in parameters.environment_variables.items() %}
+        - name: {{ var_name }}
+          value: "{{ value }}"
+        {% endfor %}
+        {% endif %}
+        {% if parameters.resources.limits or parameters.resources.requests %}
+        resources:
+          {% if parameters.resources.limits %}
+          limits:
+            {% if parameters.resources.limits.cpu %}
+              cpu: {{ parameters.resources.limits.cpu }}
+            {% endif %}
+            {% if parameters.resources.limits.memory %}
+              memory: {{ parameters.resources.limits.memory }}
+            {% endif %}
+          {% endif %}
+          {% if parameters.resources.requests %}
+          requests:
+            {% if parameters.resources.requests.cpu %}
+              cpu: {{ parameters.resources.requests.cpu }}
+            {% endif %}
+            {% if parameters.resources.requests.memory %}
+              memory: {{ parameters.resources.requests.memory }}
+            {% endif %}
+          {% endif %}
+        {% endif %}
+      volumes:
+        {% if job.has_input_file %}
+        - name: gcs-api-key-volume
+          secret:
+            secretName: gcs-api-key
+        - name: task-pv-storage-input
+          persistentVolumeClaim:
+            claimName: {{ job.input_pvc_claim_name }}
+        {% endif %}
+        - name: task-pv-storage-output
+          persistentVolumeClaim:
+            claimName: {{ job.output_pvc_claim_name }}
+      restartPolicy: Never
+  backoffLimit: {{ backoff_limit }}
