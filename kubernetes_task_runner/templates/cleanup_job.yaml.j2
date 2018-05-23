@@ -2,6 +2,9 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: '{{ job.cleanup_job_name }}'
+  annotations:
+    job_runner_job_type: "cleanup"
+    job_runner_related_job: "{{ job.name }}"
 spec:
   template:
     spec:

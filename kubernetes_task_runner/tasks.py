@@ -137,15 +137,15 @@ def synchronize_batch_jobs():
     - Sets appropriate local job state based on cluster status.
     - Issues delete commands for finished jobs.
     - Launches cleanup jobs when a regular jobs succeedes.
+
     """
     logging.info('Starting periodic task `synchronize_batch_jobs`.')
 
     cluster_manager = get_cluster_manager_instance()
     cluster_jobs = cluster_manager.list_jobs()
-    cleanup_job_suffix = BatchJob.cleanup_job_suffix
 
     logging.info(f'Got {len(cluster_jobs.items)} jobs on the cluster. '
-                 'Starting syncrhonization...')
+                 'Starting synchronization...')
 
     # Build mapping of regular and cleanup jobs for processing:
     jobs = {}
@@ -153,9 +153,13 @@ def synchronize_batch_jobs():
     for cluster_job in cluster_jobs.items:
         name = cluster_job.metadata.name
         is_cleanup = False
-        if name.endswith(cleanup_job_suffix):
+
+        annotations = cluster_job.metadata.annotations or {}
+        job_type = annotations.get('job_runner_job_type', None)
+        related_job_name = annotations.get('job_runner_related_job', None)
+        if job_type == 'cleanup' and related_job_name:
             is_cleanup = True
-            name = name[:-len(cleanup_job_suffix)]
+            name = related_job_name
         try:
             local_job = BatchJob.objects.get(name=name)
         except BatchJob.DoesNotExist:
