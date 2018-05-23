@@ -29,9 +29,8 @@ def get_batch_job(job_id):
             many=True,
         )
         return response_helper(True, code=200, data=serialized.data)
-    filters['id'] = job_id
     try:
-        instance = BatchJob.objects.get(**filters)
+        instance = BatchJob.objects.get(id=job_id)
     except (BatchJob.DoesNotExist, ValueError):
         return response_helper(False, code=404, error='DoesNotExist',
                                msg=f'Batch job {job_id} not found.')
