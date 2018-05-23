@@ -6,7 +6,8 @@ from enum import Enum
 from flask_mongoengine import MongoEngine
 from slugify import slugify
 
-from kubernetes_task_runner.fields import ExtendedStringField
+from kubernetes_task_runner.fields import (ExtendedStringField,
+                                           KubernetesResourceField)
 
 
 db = MongoEngine()
@@ -37,13 +38,7 @@ class BatchJobParameters(db.EmbeddedDocument):
     docker_image = db.StringField(required=True)
     environment_variables = db.DictField(default={})
     input_zip = db.FileField(required=False)
-    """
-    {
-     'limits':   {'cpu': '500m', 'memory': '128Mi'},
-     'requests': {'cpu': '500m', 'memory': '128Mi'}
-    }
-    """
-    resources = db.DictField(default={})
+    resources = KubernetesResourceField(default={})
 
 
 class BatchJob(BaseModel):
