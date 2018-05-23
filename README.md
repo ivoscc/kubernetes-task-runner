@@ -2,6 +2,37 @@
 
 The kubernetes task runner launches one time jobs on a Kubernetes cluster.
 
+## Process overview
+
+### Batch Job Life cycle
+
+1. A request is received to create a new batch Job.
+
+2. A secret is created on the cluster if one doesn't already exist.
+
+3. Both output (`job-<job-name>-output`) and input (`job-<job-name>-input`)
+   PVCs are created on the cluster. Note the input will only be created if
+   there's an input file.
+
+4. If the job has an input file, it's uploaded to the GCS bucket
+   (`<job_name>-input.zip`)
+
+5. The job is deployed to the cluster. If the job has an input file, an init
+   container is created to download `<job_name>-input.zip` and unzip it on the
+   `/input/` directory before starting the job.
+
+6. The `synchronize_batch_jobs` periodic task checks for job status changes.
+
+7. Upon successful completion, a cleanup job is launched to zip and upload the
+   contents of the `/output/` directory to the GCS bucket
+   (`<job_name>-output.zip`)
+
+8. Upon cleanup job completion or failure, the following resources are deleted:
+    - Regular job
+    - Cleanup job
+    - Input PVC `job-<job-name>-input` (if it exists)
+    - Output PVC `job-<job-name>-output`
+
 ## Configuration
 
 ```
@@ -19,6 +50,9 @@ GC_BUCKET_NAME: The name of the GCS bucket to use for batch job's file I/O.
 GC_CREDENTIALS_FILE_PATH: Path to GCS credentials JSON file.
 JOB_SYNCHRONIZATION_INTERVAL: Time between executions of synchronization task (default 30 seconds)
 ```
+
+Note that the `KUBERNETES_NAMESPACE` must exist as the application makes no
+attempt to create it (only required if not using the `default` namespace).
 
 ## Setup
 
