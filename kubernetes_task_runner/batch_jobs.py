@@ -192,6 +192,7 @@ def cluster_create_batch_job(batch_job, backoff_limit=0):
         if job_status == ClusterJobStatus.Succeeded:
             # job finished successfully earlier than we could look
             logging.info(f'Job {job_name} completed successfully')
+            batch_job.update(start_time=job_response.status.start_time)
             batch_job.set_cleaning()
             return job_response, f'Job {batch_job.id} finished instantly'
         logging.debug(f'Waiting for job {job_name}\'s pod to start.')
@@ -215,6 +216,7 @@ def cluster_create_batch_job(batch_job, backoff_limit=0):
         raise ClusterError(error_message, context=e.context)
 
     if pod_status == PodPhase.Succeeded:
+        batch_job.update(start_time=job_response.status.start_time)
         batch_job.set_cleaning()
         return job_response, f'Job {batch_job.id} finished instantly'
 
