@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
-from flask import request, Blueprint
-from mongoengine.errors import FieldDoesNotExist, ValidationError
-
-from kubernetes_task_runner.models import (BatchJob, BatchJobStatus)
-from kubernetes_task_runner.serializers import BatchJobSchema
-from kubernetes_task_runner.util import (response_helper, decode_zip_file)
+from flask import Blueprint, request
 from kubernetes_task_runner.batch_jobs import (cluster_create_batch_job,
                                                cluster_stop_batch_job)
 from kubernetes_task_runner.exceptions import ClusterError
-
+from kubernetes_task_runner.models import BatchJob, BatchJobStatus
+from kubernetes_task_runner.serializers import BatchJobSchema
+from kubernetes_task_runner.util import decode_zip_file, response_helper
+from mongoengine.errors import (FieldDoesNotExist, NotUniqueError,
+                                ValidationError)
 
 BatchJobSerializer = BatchJobSchema()
 
@@ -45,6 +44,7 @@ def create_batch_job():
     it on the cluster.
     """
     body = request.json or {}
+    body.pop('status', None)
 
     try:
         job_parameters = body.get('job_parameters', None)
@@ -55,11 +55,19 @@ def create_batch_job():
         if input_zip:
             batch_job.job_parameters.input_zip.put(decode_zip_file(input_zip))
         saved_batch_job = batch_job.save()
-    except FieldDoesNotExist as err:
+    except (FieldDoesNotExist, ValueError) as err:
         return response_helper(False, code=400, error='InvalidParameters',
-                               data=str(err))
+                               msg=str(err))
+    except NotUniqueError:
+        # mongoengine doesn't give us the field that raises the exception
+        unique_fields = ''.join([field_name for field_name, field
+                                 in BatchJob._fields.items() if field.unique])
+        error_message = f'Fields must be unique: {unique_fields}.'
+        return response_helper(False, code=400, error='InvalidParameters',
+                               msg=error_message)
     except ValidationError as err:
         return response_helper(False, code=400, error='InvalidParameters',
+                               msg='One or more fields had invalid values',
                                data=err.to_dict())
 
     try:

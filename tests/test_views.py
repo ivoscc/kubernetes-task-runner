@@ -92,11 +92,14 @@ class APITestCase(BaseTestCase):
         invalid parameters.
         """
         batch_job_data = self.create_batch_job(save=False)
-        batch_job_data['status'] = 'not a real status'
-        response = self._json_response(self.batch_jobs_url, method='post',
-                                       data=json.dumps(batch_job_data))
+        batch_job_data['job_parameters'] = 'not parameters'
+        mock_cluster_create_job = Mock(return_value=(None, None))
+        with patch(CREATE_BATCH_JOB_PATCH_PATH, mock_cluster_create_job):
+            response = self._json_response(self.batch_jobs_url, method='post',
+                                           data=json.dumps(batch_job_data))
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json['error'], 'InvalidParameters')
+        self.assertEqual(mock_cluster_create_job.call_count, 0)
 
     def test_stop_batch_job(self):
         """ Should call the cluster for stopping a batch job."""
@@ -117,3 +120,25 @@ class APITestCase(BaseTestCase):
         self.assertEqual(response.json['data'],
                          BatchJobSerializer.dump(updated_batch_job).data)
         mock_cluster_stop_job.assert_called_once_with(batch_job)
+
+    def test_duplicate_name_batch_job(self):
+        """
+        Should return an appropriate error response when attempting to create
+        batch job with a dupliate name.
+        """
+        batch_job_data = {**self.create_batch_job(save=False),
+                          'name': 'duplicate-name'}
+        mock_cluster_create_job = Mock(return_value=(None, None))
+        with patch(CREATE_BATCH_JOB_PATCH_PATH, mock_cluster_create_job):
+            response_0 = self._json_response(
+                self.batch_jobs_url, method='post',
+                data=json.dumps(batch_job_data),
+            )
+            response_1 = self._json_response(
+                self.batch_jobs_url, method='post',
+                data=json.dumps(batch_job_data),
+            )
+        # only one BatchJob was created
+        self.assertEqual(response_0.status_code, 200)
+        self.assertEqual(response_1.status_code, 400)
+        self.assertEqual(BatchJob.objects.count(), 1)
