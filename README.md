@@ -211,7 +211,6 @@ string.
 - Endpoint: `/batch/[batch_job_id]`
 - Method: `POST`
 - Parameters:
-  - account_id: The ID of the account this job should use.
   - job_parameters: A collection of key/value parameters used by the Job.
     - docker_image: Name of the docker image to use.
     - [environment_variables]: A collection of key/value pairs with the desired
@@ -228,7 +227,6 @@ string.
 - Sample Request Body:
   ```
   {
-    "account_id": "5c7626fe-90fe-4248-8c4d-f1f2a6b61307",
     "status": "created",
     "job_parameters": {
       "some_key": "some_value",
