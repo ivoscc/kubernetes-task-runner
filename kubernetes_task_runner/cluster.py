@@ -16,7 +16,7 @@ class ClusterManager:
         self._config = Configuration()
         self._config.host = host
         if api_key:
-            self._config['Authorization'] = api_key
+            self._config.api_key['authorization'] = api_key
         self._api_client = ApiClient(self._config)
 
         self.apps_v1_beta2 = client.AppsV1beta2Api(api_client=self._api_client)

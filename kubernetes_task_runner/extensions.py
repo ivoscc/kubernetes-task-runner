@@ -35,7 +35,6 @@ def app_config_reader(func):
                     default='kubernetes_task_runner')
     @click.argument('CELERY_BROKER_URL', envvar='CELERY_BROKER_URL')
     @click.argument('KUBERNETES_API_URL', envvar='KUBERNETES_API_URL')
-    @click.argument('KUBERNETES_API_KEY', envvar='KUBERNETES_API_KEY')
     @click.argument('KUBERNETES_NAMESPACE', envvar='KUBERNETES_NAMESPACE',
                     default='default')
     @click.argument('LOG_LEVEL', envvar='LOG_LEVEL', default='WARNING',
@@ -47,6 +46,7 @@ def app_config_reader(func):
     @click.argument('JOB_SYNCHRONIZATION_INTERVAL',
                     envvar='JOB_SYNCHRONIZATION_INTERVAL',
                     type=click.INT, default=30)
+    @click.option('--kubernetes-api-key', envvar='KUBERNETES_API_KEY')
     def wrapper(*args, **kwargs):
         app_config = {
             'LOG_LEVEL': kwargs.pop('log_level'),
