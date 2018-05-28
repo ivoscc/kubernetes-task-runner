@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 import logging
+import os
+import re
 from functools import wraps
 
 import click
 from flask import current_app
-
+from jinja2 import Environment, FileSystemLoader
 from kubernetes_task_runner.cluster import ClusterManager
 from kubernetes_task_runner.gcloud import GCSClient
 
@@ -69,8 +71,27 @@ def app_config_reader(func):
                 'credentials_file_path': kwargs.pop(
                     'gc_credentials_file_path'
                 ),
-            }
+            },
+            'TEMPLATE_ENVIRONMENT': configure_template_environment(),
         }
         kwargs['app_config'] = app_config
         return func(*args, **kwargs)
     return wrapper
+
+
+TEMPLATE_CLEANER = re.compile('[\s\'\"]')
+
+
+def variable_cleaner(value):
+    """ Escape newlines, spaces and quotes. """
+    if isinstance(value, str):
+        return TEMPLATE_CLEANER.sub('', value)
+    return value
+
+
+def configure_template_environment():
+    environment = Environment(loader=FileSystemLoader(
+        'kubernetes_task_runner/templates'
+    ))
+    environment.filters["clean"] = variable_cleaner
+    return environment

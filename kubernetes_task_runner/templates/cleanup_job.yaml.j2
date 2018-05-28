@@ -1,10 +1,10 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: '{{ job.cleanup_job_name }}'
+  name: "{{ job.cleanup_job_name|clean }}"
   annotations:
     job_runner_job_type: "cleanup"
-    job_runner_related_job: "{{ job.name }}"
+    job_runner_related_job: "{{ job.name|clean }}"
 spec:
   template:
     spec:
@@ -26,18 +26,18 @@ spec:
         lifecycle:
           postStart:
             exec:
-              command: ["gcsfuse", "--key-file", "/apikey/gcs-api-key.json", "-o", "nonempty", "{{ bucket_name }}", "/mnt/"]
+              command: ["gcsfuse", "--key-file", "/apikey/gcs-api-key.json", "-o", "nonempty", "{{ bucket_name|clean }}", "/mnt/"]
           preStop:
             exec:
               command: ["fusermount", "-u", "/mnt/"]
         command: [ "/bin/sh", "-c", "--" ]
-        args: [ "while ! `mountpoint -q /mnt/`; do sleep 1; done && zip -r /mnt/{{job.name}}-output.zip /process-output/" ]
+        args: [ "while ! `mountpoint -q /mnt/`; do sleep 1; done && zip -r /mnt/{{job.name|clean}}-output.zip /process-output/" ]
       volumes:
         - name: task-pv-storage-output
           persistentVolumeClaim:
-            claimName: {{ job.output_pvc_claim_name }}
+            claimName: "{{ job.output_pvc_claim_name|clean }}"
         - name: gcs-api-key-volume
           secret:
             secretName: gcs-api-key
       restartPolicy: Never
-  backoffLimit: {{ backoff_limit }}
+  backoffLimit: {{ backoff_limit|clean }}

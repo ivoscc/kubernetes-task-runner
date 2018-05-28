@@ -33,15 +33,10 @@ class ClusterJobStatus(Enum):
 def build_config_from_template(template_name, context):
     """
     Create a configuration JSON for the Kubernetes object at `template_name`.
-
-    TODO: make use of Jinja loaders.
     """
-    current_directory = os.path.dirname(os.path.realpath(__file__))
-    template_path = os.path.join(
-        current_directory, f'templates/{template_name}',
-    )
-    template = Template(open(template_path, 'r').read())
-    return yaml.load(template.render(**context))
+    env = current_app.config['TEMPLATE_ENVIRONMENT']
+    template = env.get_template(template_name)
+    return yaml.safe_load(template.render(**context))
 
 
 def parse_cluster_exception(exception):

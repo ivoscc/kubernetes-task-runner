@@ -1,10 +1,10 @@
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: "{{name}}"
+  name: "{{name|clean}}"
 spec:
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: "{{storage_size}}"
+      storage: "{{storage_size|clean}}"

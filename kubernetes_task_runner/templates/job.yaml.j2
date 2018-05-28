@@ -2,7 +2,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: '{{ job.name }}'
+  name: "{{ job.name|clean }}"
 spec:
   template:
     spec:
@@ -11,7 +11,7 @@ spec:
       - name: initializer
         image: ivoscc/docker-gcsfuse-utils
         command: [ "/bin/sh", "-c" ]
-        args: [ "gcsfuse --key-file /apikey/gcs-api-key.json {{ bucket_name }} /mnt/ && unzip /mnt/{{ job.name }}-input.zip -d /input/" ]
+        args: [ "gcsfuse --key-file /apikey/gcs-api-key.json {{ bucket_name|clean }} /mnt/ && unzip /mnt/{{ job.name|clean }}-input.zip -d /input/" ]
         volumeMounts:
           - name: gcs-api-key-volume
             mountPath: "/apikey/"
@@ -26,7 +26,7 @@ spec:
       {% endif %}
       containers:
       - name: task
-        image: {{ parameters.docker_image }}
+        image: "{{ parameters.docker_image|clean }}"
         volumeMounts:
           {% if job.has_input_file %}
           - name: task-pv-storage-input
@@ -38,8 +38,8 @@ spec:
         {% if parameters.environment_variables %}
         env:
         {% for var_name, value in parameters.environment_variables.items() %}
-        - name: {{ var_name }}
-          value: "{{ value }}"
+        - name: "{{ var_name|clean }}"
+          value: "{{ value|clean }}"
         {% endfor %}
         {% endif %}
         {% if parameters.resources.limits or parameters.resources.requests %}
@@ -47,19 +47,19 @@ spec:
           {% if parameters.resources.limits %}
           limits:
             {% if parameters.resources.limits.cpu %}
-              cpu: {{ parameters.resources.limits.cpu }}
+              cpu: "{{ parameters.resources.limits.cpu|clean }}"
             {% endif %}
             {% if parameters.resources.limits.memory %}
-              memory: {{ parameters.resources.limits.memory }}
+              memory: "{{ parameters.resources.limits.memory|clean }}"
             {% endif %}
           {% endif %}
           {% if parameters.resources.requests %}
           requests:
             {% if parameters.resources.requests.cpu %}
-              cpu: {{ parameters.resources.requests.cpu }}
+              cpu: "{{ parameters.resources.requests.cpu|clean }}"
             {% endif %}
             {% if parameters.resources.requests.memory %}
-              memory: {{ parameters.resources.requests.memory }}
+              memory: "{{ parameters.resources.requests.memory|clean }}"
             {% endif %}
           {% endif %}
         {% endif %}
@@ -70,10 +70,10 @@ spec:
             secretName: gcs-api-key
         - name: task-pv-storage-input
           persistentVolumeClaim:
-            claimName: {{ job.input_pvc_claim_name }}
+            claimName: "{{ job.input_pvc_claim_name|clean }}"
         {% endif %}
         - name: task-pv-storage-output
           persistentVolumeClaim:
-            claimName: {{ job.output_pvc_claim_name }}
+            claimName: "{{ job.output_pvc_claim_name|clean }}"
       restartPolicy: Never
-  backoffLimit: {{ backoff_limit }}
+  backoffLimit: {{ backoff_limit|clean }}

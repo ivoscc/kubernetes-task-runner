@@ -3,6 +3,7 @@ import unittest
 from uuid import uuid4
 
 from kubernetes_task_runner.app import create_app
+from kubernetes_task_runner.extensions import configure_template_environment
 from kubernetes_task_runner.models import BatchJob, db
 
 TEST_CONFIG = {
@@ -20,6 +21,7 @@ TEST_CONFIG = {
         'bucket_name': 'bucket_name',
         'credentials_file_path': '/tmp/',
     },
+    'TEMPLATE_ENVIRONMENT': configure_template_environment(),
 }
 
 
