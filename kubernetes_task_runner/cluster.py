@@ -12,8 +12,7 @@ class ClusterManager:
     Manage interface to Kubernetes cluster.
     """
 
-    def __init__(self, host, api_key=None,
-                 namespace='default'):
+    def __init__(self, host, api_key=None, namespace='default'):
         self._config = Configuration()
         self._config.host = host
         if api_key:
@@ -33,7 +32,7 @@ class ClusterManager:
         try:
             return getattr(client, endpoint)(**kwargs)
         except ApiException as e:
-            if e.status == 404:
+            if ignore_404 and e.status == 404:
                 return
             logging.error(str(e))
             raise
@@ -144,7 +143,7 @@ class ClusterManager:
                 if e.status != 404:
                     raise
 
-        logging.info(f'Creating secret {name} from the cluster.')
+        logging.info(f'Creating secret {name} on the cluster.')
         filename = filename or os.path.basename(file_path)
         with open(file_path, 'r') as fh:
             data = fh.read()

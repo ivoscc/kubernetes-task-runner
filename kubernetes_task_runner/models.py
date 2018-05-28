@@ -18,12 +18,12 @@ def list_enum_values(enum):
 
 
 class BatchJobStatus(Enum):
-    CREATED = 'created'
-    RUNNING = 'running'
-    FAILED = 'failed'
-    KILLED = 'killed'
-    CLEANING = 'cleaning'
-    SUCCEEDED = 'succeeded'
+    CREATED = 'created'      # Just created and is currently being deployed
+    RUNNING = 'running'      # Deployed and is running on Kubernetes
+    FAILED = 'failed'        # Couldn't be deployed or failed mid-execution
+    KILLED = 'killed'        # Killed by the user before finishing
+    CLEANING = 'cleaning'    # Finished successfully and being cleaned up
+    SUCCEEDED = 'succeeded'  # Job and cleanup process finished successfully
 
 
 class BaseModel(db.Document):
@@ -33,8 +33,7 @@ class BaseModel(db.Document):
 
 
 class BatchJobParameters(db.EmbeddedDocument):
-    """
-    """
+    """ Holds configuration for batch jobs. """
     docker_image = db.StringField(required=True)
     environment_variables = db.DictField(default={})
     input_zip = db.FileField(required=False)
@@ -42,8 +41,7 @@ class BatchJobParameters(db.EmbeddedDocument):
 
 
 class BatchJob(BaseModel):
-    """
-    """
+    """ Holds configuration for batch jobs. """
     cleanup_job_suffix = '-cleanup'
 
     name = ExtendedStringField(
